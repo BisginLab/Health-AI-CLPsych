@@ -9,9 +9,10 @@ login(token)
 
 #load model and tokenizer
 print("Loading model and tokenizer...")
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
+model_name = "meta-llama/Llama-3.2-1B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
+tokenizer.pad_token = tokenizer.eos_token  # Set pad token to eos token for Llama models
+model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_token_id=tokenizer.eos_token_id)
 
 #Load in /shared/DATA/reddit/crowd/test/shared_task_posts_test.csv for post level features
 df_X = ds.load_dataset("csv", data_files="/shared/DATA/reddit/crowd/test/shared_task_posts_test.csv")['train']
@@ -37,25 +38,39 @@ def clean_label(pred):
     match = re.search(r'[abcd]', pred.lower())
     return match.group(0) if match else "?"
 
-def get_predictions(input_batch):
-    # get the prompt for text generation, formatted in role/content style
-    formatted_prompts = [
+def get_predictions(batch):
+    prompts = [
         "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
         "You are a health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n"
         "<|start_header_id|>user<|end_header_id|>\n"
         f"{text}\n"
         "<|start_header_id|>assistant<|end_header_id|>\n"
-        for text in input_batch['text']
+        for text in batch['text']
     ]
 
-    # Generate a response from the model
-    tokenized_inputs = tokenizer(formatted_prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
-    responses = model.generate(**tokenized_inputs, max_new_tokens=4)
+    tokenized_inputs = tokenizer(
+        prompts,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=1024
+    ).to(model.device)
 
-    # Decode the response and extract the relevant information
-    decoded_response = tokenizer.batch_decode(responses[0], skip_special_tokens=True)
-    cleaned_response = [clean_label(response) for response in decoded_response]
-    return {"predictions": cleaned_response}
+    responses = model.generate(
+        **tokenized_inputs,
+        max_new_tokens=4,
+        do_sample=False,
+        num_beams=1,
+        use_cache=True
+    )
+
+    decoded_responses = tokenizer.batch_decode(responses, skip_special_tokens=True)
+
+    # Return exactly one prediction per input text
+    predictions = [clean_label(response) for response in decoded_responses]
+
+    return {"predictions": predictions}
+
 
 #Create a single dataset out of the key-value pairs of the original dataset
 print("Mapping user posts to their corresponding texts...")
@@ -65,6 +80,6 @@ df = df_y.map(get_matching_posts, batched=False, desc="Mapping user posts")
 print(f"Mapped dataset columns: {df.column_names}")
 print(f"Mapped dataset size: {len(df)}")
 
-df = df.map(get_predictions, batched=True, batch_size=4, desc="Generating predictions")
+df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
 
-df.to_pandas().to_csv("/shared/DATA/reddit/crowd/test/baseline_llama_predictions.csv", index=True)
+df.to_pandas().to_csv("/home/umflint.edu/brayclou/Health-AI-CLPsych/baseline_llama_predictions.csv", index=True)
