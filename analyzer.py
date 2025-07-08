@@ -3,31 +3,34 @@ from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 import matplotlib.pyplot as plt
 
-def to_binary(pred):
-    if pred >= .6:
-        return 1
-    else:
-        return 0
-
 print("Loading Dataset...")
 pre_label_df = pd.read_csv('/home/umflint.edu/brayclou/Health-AI-CLPsych/baseline_llama_predictions.csv', header=0)
 label_df = pre_label_df.iloc[0: len(pre_label_df)]#Ensure that this properly takes into account the train test split
 
-y_true = label_df['True'].tolist() 
-y_pred = label_df['Predicted'].tolist()
-y_pred_bin = label_df['Predicted'].apply(to_binary).tolist()
-
+y_true = label_df['raw_label'].tolist() 
+y_pred_bin = label_df['predictions'].tolist()
 print("Dataset Loaded...")
 print(f"Size of pre datasset: {len(pre_label_df)}")
 print(f"Size of dataset: {len(y_true)}")
 
 #Get prediction results
 print("Overall Metrics:")
-print("Accuracy: ",accuracy_score(y_true, y_pred_bin))
-print("Precision: ",precision_score(y_true, y_pred_bin))
-print("Recall: ",recall_score(y_true, y_pred_bin))
-print("F1: ",f1_score(y_true, y_pred_bin))
-print()
+print(classification_report(y_true, y_pred_bin, digits=4))
+
+print(f"Datapoints: {len(y_true)}")
+print(f"Datapoints with predictions: {len(y_pred_bin)}")
+print(f"Instances with no predictions: {len([x for x in y_pred_bin if x == '?'])}")
+print(f"Unique labels in true data: {set(y_true)}")
+print(f"Instances of true label 'a': {y_true.count('a')}")
+print(f"Instances of predicted label 'a': {y_pred_bin.count('a')}\n")
+print(f"Instances of true label 'b': {y_true.count('b')}")
+print(f"Instances of predicted label 'b': {y_pred_bin.count('b')}\n")
+print(f"Instances of true label 'c': {y_true.count('c')}")
+print(f"Instances of predicted label 'c': {y_pred_bin.count('c')}\n")
+print(f"Instances of true label 'd': {y_true.count('d')}")
+print(f"Instances of predicted label 'd': {y_pred_bin.count('d')}")
+
+exit()
 
 print("AUC and ROC")
 fpr, tpr, thresholds = roc_curve(y_true, y_pred_bin)
