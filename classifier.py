@@ -9,15 +9,15 @@ login(token)
 
 #load model and tokenizer
 print("Loading model and tokenizer...")
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
+model_name = "meta-llama/Llama-3.2-1B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token  # Set pad token to eos token for Llama models
 model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_token_id=tokenizer.eos_token_id)
 
 #Load in /shared/DATA/reddit/crowd/test/shared_task_posts_test.csv for post level features
-df_X = ds.load_dataset("csv", data_files="../shared_task_posts_test.csv")['train']
+df_X = ds.load_dataset("csv", data_files="/shared/DATA/reddit/crowd/test/shared_task_posts_test.csv")['train']
 #Load in /shared/DATA/reddit/crowd/test/crowd_test.csv for user level labels
-df_y = ds.load_dataset("csv", data_files="../crowd_test.csv")['train']
+df_y = ds.load_dataset("csv", data_files="/shared/DATA/reddit/crowd/test/crowd_test.csv")['train']
 separator = "\n\n"
 
 def get_matching_posts(user):
@@ -32,7 +32,7 @@ def get_matching_posts(user):
     """
     user_id = user['user_id']
     matching_posts = df_X.filter(lambda row: row['user_id'] == user_id)
-    return {"text": separator.join([text for text in matching_posts['post_body'] if text is not None])}
+    return {"text": separator.join([row['post_body'] for row in matching_posts if row['post_body'] is not None and row["subreddit"] == "SuicideWatch"][:10])}
 
 def clean_label(pred):
     """This function extracts the first occurrence of 'a', 'b', 'c', or 'd' from the prediction string.""" #NOTE: Seems to be only predicting 'a'.
@@ -49,6 +49,7 @@ def get_predictions(batch):
         for text in batch['text']
     ]
 
+    #Tokenize prompts
     tokenized_inputs = tokenizer(
         prompts,
         return_tensors="pt",
@@ -57,20 +58,30 @@ def get_predictions(batch):
         max_length=1024
     ).to(model.device)
 
+    #record length of prompt, so that the script doesn't need to decode that part.
+    input_ids = tokenized_inputs['input_ids']
+    input_lengths = [len(seq) for seq in input_ids]
+
     responses = model.generate(
         **tokenized_inputs,
-        max_new_tokens=4,
+        max_new_tokens=10,
         do_sample=False,
         num_beams=1,
         use_cache=True
     )
 
-    decoded_responses = tokenizer.batch_decode(responses, skip_special_tokens=True)
+    decoded_responses = [
+        tokenizer.decode(responses[i][input_lengths[i]:], skip_special_tokens=True)
+        for i in range(len(responses))
+    ]
 
     # Return exactly one prediction per input text
     predictions = [clean_label(response) for response in decoded_responses]
 
-    return {"predictions": predictions}
+    return {
+        "predictions": predictions,
+        "raw_predictions": decoded_responses
+    }
 
 
 #Create a single dataset out of the key-value pairs of the original dataset
@@ -86,4 +97,4 @@ df = df.filter(lambda x: x['raw_label'] != None, batched=False)
 
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
 
-df.to_pandas().to_csv("../baseline_llama_predictions.csv", index=True)
+df.to_pandas().to_csv("/home/umflint.edu/brayclou/Health-AI-CLPsych/results/baseline_suicidewatch_llama_predictions.csv", index=True)
