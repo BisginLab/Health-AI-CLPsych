@@ -5,19 +5,19 @@ import os
 import re
 
 token = os.getenv('token')
-login(token)
+login(password=token)
 
 #load model and tokenizer
 print("Loading model and tokenizer...")
-model_name = "meta-llama/Llama-3.2-1B-Instruct"
+model_name = "meta-llama/Llama-3.2-3B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token  # Set pad token to eos token for Llama models
 model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_token_id=tokenizer.eos_token_id)
 
 #Load in /shared/DATA/reddit/crowd/test/shared_task_posts_test.csv for post level features
-df_X = ds.load_dataset("csv", data_files="/shared/DATA/reddit/crowd/test/shared_task_posts_test.csv")['train']
+df_X = ds.load_dataset("csv", data_files="../shared_task_posts_test.csv")['train']#/shared/DATA/reddit/crowd/test
 #Load in /shared/DATA/reddit/crowd/test/crowd_test.csv for user level labels
-df_y = ds.load_dataset("csv", data_files="/shared/DATA/reddit/crowd/test/crowd_test.csv")['train']
+df_y = ds.load_dataset("csv", data_files="../crowd_test.csv")['train']#/shared/DATA/reddit/crowd/test
 separator = "\n\n"
 
 def get_matching_posts(user):
@@ -97,4 +97,4 @@ df = df.filter(lambda x: x['raw_label'] != None, batched=False)
 
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
 
-df.to_pandas().to_csv("/home/umflint.edu/brayclou/Health-AI-CLPsych/results/baseline_suicidewatch_llama_predictions.csv", index=True)
+df.to_pandas().to_csv("../baseline_suicidewatch_llama_predictions.csv", index=True)#/home/umflint.edu/brayclou/Health-AI-CLPsych/results
