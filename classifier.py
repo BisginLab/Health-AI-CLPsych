@@ -5,7 +5,7 @@ import os
 import re
 
 token = os.getenv('token')
-login(password=token)
+login(password=token, username="BraydenAC")
 
 #load model and tokenizer
 print("Loading model and tokenizer...")
