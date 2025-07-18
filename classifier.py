@@ -1,14 +1,12 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import datasets as ds
-from huggingface_hub import login, set_access_token
+from huggingface_hub import login
 import os
 import re
 
 token = os.getenv('token')
-try:
-    login(password=token)
-except:
-    set_access_token(token)
+assert token, "Environment variable 'token' is not set"
+login(token)
 
 #load model and tokenizer
 print("Loading model and tokenizer...")
