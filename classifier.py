@@ -41,13 +41,16 @@ def clean_label(pred):
     return match.group(0) if match else "?"
 
 def get_predictions(batch):
+    # prompts = [
+    #     "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
+    #     "You are a health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n"
+    #     "<|start_header_id|>user<|end_header_id|>\n"
+    #     f"{text}\n"
+    #     "<|start_header_id|>assistant<|end_header_id|>\n"
+    #     for text in batch['text']
+    # ]
     prompts = [
-        "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
-        "You are a health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n"
-        "<|start_header_id|>user<|end_header_id|>\n"
-        f"{text}\n"
-        "<|start_header_id|>assistant<|end_header_id|>\n"
-        for text in batch['text']
+        f'You are a health specialist. Answer the following text by stating whether or not the patient is suicidal or not by giving rating of 1 to 10 formatted as number/10.\n\nPatient text: "{text}"\n' for text in batch['text']
     ]
 
     #Tokenize prompts
@@ -98,4 +101,4 @@ df = df.filter(lambda x: x['raw_label'] != None, batched=False)
 
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
 
-df.to_pandas().to_csv("../baseline_suicidewatch_llama_predictions.csv", index=True)#/home/umflint.edu/brayclou/Health-AI-CLPsych/results
+df.to_pandas().to_csv("../baseline_suicidewatch_llama_predictions_new_prompt.csv", index=True)#/home/umflint.edu/brayclou/Health-AI-CLPsych/results
