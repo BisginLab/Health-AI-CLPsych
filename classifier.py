@@ -50,7 +50,7 @@ def get_predictions(batch):
     #     for text in batch['text']
     # ]
     prompts = [
-        f'You are a health specialist. Answer the following text by stating whether or not the patient is suicidal or not by giving rating of 1 to 10 formatted as number/10.\n\nPatient text: "{text}"\n' for text in batch['text']
+        f'You are a health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n\nPatient text: "{text}"\n' for text in batch['text']
     ]
 
     #Tokenize prompts
