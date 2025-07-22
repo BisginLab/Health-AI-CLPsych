@@ -10,7 +10,7 @@ login(token)
 
 #load model and tokenizer
 print("Loading model and tokenizer...")
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
+model_name = "meta-llama/Llama-3.1-8B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token  # Set pad token to eos token for Llama models
 model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_token_id=tokenizer.eos_token_id)
@@ -41,17 +41,17 @@ def clean_label(pred):
     return match.group(0) if match else "?"
 
 def get_predictions(batch):
-    # prompts = [
-    #     "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
-    #     "You are a health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n"
-    #     "<|start_header_id|>user<|end_header_id|>\n"
-    #     f"{text}\n"
-    #     "<|start_header_id|>assistant<|end_header_id|>\n"
-    #     for text in batch['text']
-    # ]
     prompts = [
-        f'You are a health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n\nPatient text: "{text}"\n' for text in batch['text']
+        "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
+        "You are a helpful health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n"
+        "<|start_header_id|>user<|end_header_id|>\n"
+        f"{text}\n"
+        "<|start_header_id|>assistant<|end_header_id|>\n"
+        for text in batch['text']
     ]
+    # prompts = [
+    #     f'You are a health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n\nPatient text: "{text}"\n' for text in batch['text']
+    # ]
 
     #Tokenize prompts
     tokenized_inputs = tokenizer(
@@ -101,4 +101,4 @@ df = df.filter(lambda x: x['raw_label'] != None, batched=False)
 
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
 
-df.to_pandas().to_csv("../baseline_suicidewatch_llama_predictions_new_prompt.csv", index=True)#/home/umflint.edu/brayclou/Health-AI-CLPsych/results
+df.to_pandas().to_csv("../llama_8b.csv", index=True)#/home/umflint.edu/brayclou/Health-AI-CLPsych/results
