@@ -38,16 +38,18 @@ def get_matching_posts(user):
 def clean_label(pred):
     """This function extracts the first occurrence of a match from the prediction string."""
     match = re.search(r'\b(none|low|moderate|severe)\b', pred.lower())
-
-    if match[0] == "none":
-        return "a"
-    elif match[0] == "low":
-        return "b"
-    elif match[0] == "moderate":
-        return "c"
-    elif match[0] == "severe":
-        return "d"
-    else:
+    try:
+        if match[0] == "none":
+            return "a"
+        elif match[0] == "low":
+            return "b"
+        elif match[0] == "moderate":
+            return "c"
+        elif match[0] == "severe":
+            return "d"
+        else:
+            return "?"
+    except TypeError:
         return "?"
 
 def get_predictions(batch):
