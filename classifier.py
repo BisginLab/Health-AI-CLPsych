@@ -53,17 +53,17 @@ def clean_label(pred):
         return "?"
 
 def get_predictions(batch):
-    prompts = [
-        "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
-        "You are a helpful health specialist. Rate the following post content from a social media user on how likely it is that the user is experiencing suicidal thoughts.  Here are the options: none, low, moderate, severe.\n"
-        "<|start_header_id|>user<|end_header_id|>\n"
-        f"{text}\n"
-        "<|start_header_id|>assistant<|end_header_id|>\n"
-        for text in batch['text']
-    ]
     # prompts = [
-    #     f'You are a health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n\nPatient text: "{text}"\n' for text in batch['text']
+    #     "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
+    #     "You are a helpful health specialist. Rate the following post content from a social media user on how likely it is that the user is experiencing suicidal thoughts.  Here are the options: none, low, moderate, severe.\n"
+    #     "<|start_header_id|>user<|end_header_id|>\n"
+    #     f"{text}\n"
+    #     "<|start_header_id|>assistant<|end_header_id|>\n"
+    #     for text in batch['text']
     # ]
+    prompts = [
+        f'You are a helpful health specialist. Rate the following post content from a social media user on how likely it is that the user is experiencing suicidal thoughts.  Here are the options: none, low, moderate, severe.\n\nPatient text: "{text}"\n' for text in batch['text']
+    ]
 
     #Tokenize prompts
     tokenized_inputs = tokenizer(
@@ -80,7 +80,7 @@ def get_predictions(batch):
 
     responses = model.generate(
         **tokenized_inputs,
-        max_new_tokens=3,
+        max_new_tokens=15,
         do_sample=False,
         num_beams=1,
         use_cache=True
