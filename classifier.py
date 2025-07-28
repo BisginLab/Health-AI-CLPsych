@@ -17,8 +17,12 @@ model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_
 
 #Load in /shared/DATA/reddit/crowd/test/shared_task_posts_test.csv for post level features
 df_X = ds.load_dataset("csv", data_files="../shared_task_posts_test.csv")['train']#/shared/DATA/reddit/crowd/test
+print(f"df_X columns: {df_X.column_names}")
+print(df_X.head(5))
 #Load in /shared/DATA/reddit/crowd/test/crowd_test.csv for user level labels
 df_y = ds.load_dataset("csv", data_files="../crowd_test.csv")['train']#/shared/DATA/reddit/crowd/test
+print(f"df_y columns: {df_y.column_names}")
+print(df_y.head(5))
 separator = "\n\n"
 
 def get_matching_posts(user):
@@ -37,13 +41,23 @@ def get_matching_posts(user):
 
 def clean_label(pred):
     """This function extracts the first occurrence of 'a', 'b', 'c', or 'd' from the prediction string.""" #NOTE: Seems to be only predicting 'a'.
-    match = re.search(r'[abcd]', pred.lower())
-    return match.group(0) if match else "?"
+    match = re.search(r'\b(none|low|moderate|severe)\b', pred.lower())
+
+    if match(0) == "none":
+        return "a"
+    elif match(0) == "low":
+        return "b"
+    elif match(0) == "moderate":
+        return "c"
+    elif match(0) == "severe":
+        return "d"
+    else:
+        return "?"
 
 def get_predictions(batch):
     prompts = [
         "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
-        "You are a helpful health specialist. Classify the following post content from a social media user as \"a\" for non-suicidal, \"b\" for low-risk of suicide, \"c\" for moderate-risk of suicide, or \"d\" for severe-risk of suicide. Provide your response in the format: \"a\", \"b\", \"c\", or \"d\".\n"
+        "You are a helpful health specialist. Rate the following post content from a social media user on how likely it is that the user is experiencing suicidal thoughts.  Here are the options: none, low, moderate, severe.\n"
         "<|start_header_id|>user<|end_header_id|>\n"
         f"{text}\n"
         "<|start_header_id|>assistant<|end_header_id|>\n"
@@ -68,7 +82,7 @@ def get_predictions(batch):
 
     responses = model.generate(
         **tokenized_inputs,
-        max_new_tokens=10,
+        max_new_tokens=3,
         do_sample=False,
         num_beams=1,
         use_cache=True
