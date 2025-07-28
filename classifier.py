@@ -39,13 +39,13 @@ def clean_label(pred):
     """This function extracts the first occurrence of a match from the prediction string."""
     match = re.search(r'\b(none|low|moderate|severe)\b', pred.lower())
 
-    if match(0) == "none":
+    if match[0] == "none":
         return "a"
-    elif match(0) == "low":
+    elif match[0] == "low":
         return "b"
-    elif match(0) == "moderate":
+    elif match[0] == "moderate":
         return "c"
-    elif match(0) == "severe":
+    elif match[0] == "severe":
         return "d"
     else:
         return "?"
