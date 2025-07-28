@@ -17,12 +17,8 @@ model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_
 
 #Load in /shared/DATA/reddit/crowd/test/shared_task_posts_test.csv for post level features
 df_X = ds.load_dataset("csv", data_files="../shared_task_posts_test.csv")['train']#/shared/DATA/reddit/crowd/test
-print(f"df_X columns: {df_X.column_names}")
-print(df_X.head(5))
 #Load in /shared/DATA/reddit/crowd/test/crowd_test.csv for user level labels
 df_y = ds.load_dataset("csv", data_files="../crowd_test.csv")['train']#/shared/DATA/reddit/crowd/test
-print(f"df_y columns: {df_y.column_names}")
-print(df_y.head(5))
 separator = "\n\n"
 
 def get_matching_posts(user):
