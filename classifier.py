@@ -40,7 +40,7 @@ def get_matching_posts(user):
     return {"text": separator.join([row['post_body'] for row in matching_posts if row['post_body'] is not None and row["subreddit"] == "SuicideWatch"][:10])}
 
 def clean_label(pred):
-    """This function extracts the first occurrence of 'a', 'b', 'c', or 'd' from the prediction string.""" #NOTE: Seems to be only predicting 'a'.
+    """This function extracts the first occurrence of a match from the prediction string."""
     match = re.search(r'\b(none|low|moderate|severe)\b', pred.lower())
 
     if match(0) == "none":
