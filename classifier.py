@@ -61,11 +61,8 @@ def get_predictions(batch):
     #     "<|start_header_id|>assistant<|end_header_id|>\n"
     #     for text in batch['text']
     # ]
-    # prompts = [ #this is string1, a instruction + input statement
-    #     f'You are a helpful health specialist. Rate the following post content from a social media user on how likely it is that the user is experiencing suicidal thoughts.  Here are the options: none, low, moderate, severe.\n\nPatient text: "{text}"\n' for text in batch['text']
-    # ]
     prompts = [ #this is string2, a leading statment
-        f'"{text}"\nIn rating the suicidal content of this message from the options none, low, moderate, and severe, I choose ' for text in batch['text']
+        f'"{text}"\nIn rating how suicidal the author of the above message is from the options none, low, moderate, and severe, I choose ' for text in batch['text']
     ]
 
     #Tokenize prompts
