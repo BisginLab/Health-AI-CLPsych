@@ -62,7 +62,7 @@ def get_predictions(batch):
     #     for text in batch['text']
     # ]
     prompts = [ 
-        f'"{text}"\nIn rating how suicidal the author of the above message is from 1 to 4, I choose ' for text in batch['text']
+        f'"{text}"\nIn rating how suicidal the author of the above message is from 1(not suicidal) to 4(extremely suicidal), I choose ' for text in batch['text']
     ]
 
     #Tokenize prompts
