@@ -37,15 +37,15 @@ def get_matching_posts(user):
 
 def clean_label(pred):
     """This function extracts the first occurrence of a match from the prediction string."""
-    match = re.search(r'\b(none|low|moderate|severe)\b', pred.lower())
+    match = re.search(r'(1|2|3|4)', pred.lower())
     try:
-        if match[0] == "none":
+        if match[0] == "1":
             return "a"
-        elif match[0] == "low":
+        elif match[0] == "2":
             return "b"
-        elif match[0] == "moderate":
+        elif match[0] == "3":
             return "c"
-        elif match[0] == "severe":
+        elif match[0] == "4":
             return "d"
         else:
             return "?"
@@ -53,14 +53,6 @@ def clean_label(pred):
         return "?"
 
 def get_predictions(batch):
-    # prompts = [
-    #     "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
-    #     "You are a helpful health specialist. Rate the following post content from a social media user on how likely it is that the user is experiencing suicidal thoughts.  Here are the options: none, low, moderate, severe.\n"
-    #     "<|start_header_id|>user<|end_header_id|>\n"
-    #     f"{text}\n"
-    #     "<|start_header_id|>assistant<|end_header_id|>\n"
-    #     for text in batch['text']
-    # ]
     prompts = [ 
         f'"{text}"\nIn rating how suicidal the author of the above message is from 1(not suicidal) to 4(extremely suicidal), I choose ' for text in batch['text']
     ]
