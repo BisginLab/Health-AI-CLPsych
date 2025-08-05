@@ -8,17 +8,26 @@ token = os.getenv('token')
 assert token, "Environment variable 'token' is not set"
 login(token)
 
+######
+
+model_name = "meta-llama/Llama-3.2-3B-Instruct"
+df_X_path = "../crowd-train/shared_task_posts.csv"
+df_y_path = "../crowd-train/crowd_train.csv"
+output_path = "../results/crowd-train-llama-3b.csv"
+
+######
+
 #load model and tokenizer
 print("Loading model and tokenizer...")
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
+
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token  # Set pad token to eos token for Llama models
 model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_token_id=tokenizer.eos_token_id)
 
 #Load in /shared/DATA/reddit/crowd/test/shared_task_posts_test.csv for post level features
-df_X = ds.load_dataset("csv", data_files="../shared_task_posts_test.csv")['train']#/shared/DATA/reddit/crowd/test
+df_X = ds.load_dataset("csv", data_files=df_X_path)['train']
 #Load in /shared/DATA/reddit/crowd/test/crowd_test.csv for user level labels
-df_y = ds.load_dataset("csv", data_files="../crowd_test.csv")['train']#/shared/DATA/reddit/crowd/test
+df_y = ds.load_dataset("csv", data_files=df_y_path)['train']
 separator = "\n\n"
 
 def get_matching_posts(user):
@@ -102,7 +111,10 @@ print(f"Mapped dataset size: {len(df)}")
 
 #remove rows where df['raw_label'] is equal to the string 'nan'
 df = df.filter(lambda x: x['raw_label'] != None, batched=False)
+print("Nones filtered out")
 
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
+print("Predictions generated")
 
-df.to_pandas().to_csv("../llama_8b.csv", index=True)#/home/umflint.edu/brayclou/Health-AI-CLPsych/results
+df.to_pandas().to_csv(output_path, index=True)#/home/umflint.edu/brayclou/Health-AI-CLPsych/results
+print(f"Predictions saved to {output_path}")
