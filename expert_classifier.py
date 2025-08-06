@@ -3,17 +3,19 @@ import datasets as ds
 from huggingface_hub import login
 import os
 import re
+from collections import defaultdict
 
 token = os.getenv('token')
 assert token, "Environment variable 'token' is not set"
 login(token)
 
 ######
-
+print("Note for Logs: This is the expert classifier")
 model_name = "meta-llama/Llama-3.2-3B-Instruct"
 df_X_path = "../expert/expert_posts.csv"
 df_y_path = "../expert/expert.csv"
 output_path = "../results/expert-llama-3b.csv"
+separator = "\n\n"
 
 ######
 
@@ -28,7 +30,13 @@ model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_
 df_X = ds.load_dataset("csv", data_files=df_X_path)['train']
 #Load in /shared/DATA/reddit/crowd/test/crowd_test.csv for user level labels
 df_y = ds.load_dataset("csv", data_files=df_y_path)['train']
-separator = "\n\n"
+
+#Add content of df_X into a defaultdict keyed by user id
+user_posts = defaultdict(list)
+for row in df_X:
+    #If statement filters by SuicideWatch subreddit
+    if row["subreddit"] == "SuicideWatch":
+        user_posts[row["user_id"]].append(row["post_body"])
 
 def get_matching_posts(user):
     """
@@ -40,9 +48,10 @@ def get_matching_posts(user):
     Returns:
         dict: All posts from a given user, concatenated into a single text string.
     """
-    user_id = user['user_id']
-    matching_posts = df_X.filter(lambda row: row['user_id'] == user_id)
-    return {"text": separator.join([row['post_body'] for row in matching_posts if row['post_body'] is not None and row["subreddit"] == "SuicideWatch"][:10])}
+    posts = user_posts.get(user["user_id"], [])
+    if len(posts) == 0:
+        raise ValueError(f"User \"{user['user_id']}\" found to be without any posts!")
+    return {"text": separator.join(posts[:10])}
 
 def clean_label(pred):
     """This function extracts the first occurrence of a match from the prediction string."""
