@@ -30,6 +30,8 @@ model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_
 df_X = ds.load_dataset("csv", data_files=df_X_path)['train']
 #Load in /shared/DATA/reddit/crowd/test/crowd_test.csv for user level labels
 df_y = ds.load_dataset("csv", data_files=df_y_path)['train']
+#Because the different datasets have different column naming conventions, rename label to raw_label
+df_y = df_y.rename_column("label", "raw_label")
 
 #Add content of df_X into a defaultdict keyed by user id
 user_posts = defaultdict(list)
@@ -52,7 +54,9 @@ def get_matching_posts(user):
     # if len(posts) == 0:
     #     raise ValueError(f"User \"{user['user_id']}\" found to be without any posts!")
     try:
-        return {"text": separator.join(posts[:10]) if posts else None}
+        return {
+            "text": separator.join(posts[:10]) if posts else None
+        }
     except TypeError:
         return {"text": None}
 
