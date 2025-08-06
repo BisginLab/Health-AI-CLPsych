@@ -51,7 +51,7 @@ def get_matching_posts(user):
     posts = user_posts.get(user["user_id"], [])
     if len(posts) == 0:
         raise ValueError(f"User \"{user['user_id']}\" found to be without any posts!")
-    return {"text": separator.join(posts[:10])}
+    return {"text": separator.join(posts[:10]) if posts else None}
 
 def clean_label(pred):
     """This function extracts the first occurrence of a match from the prediction string."""
@@ -120,6 +120,7 @@ print(f"Mapped dataset size: {len(df)}")
 
 #remove rows where df['raw_label'] is equal to the string 'nan'
 df = df.filter(lambda x: x['raw_label'] != None, batched=False)
+df = df.filter(lambda x: x['text'] != None, batched=False)
 print("Nones filtered out")
 
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
