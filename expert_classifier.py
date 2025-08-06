@@ -49,8 +49,8 @@ def get_matching_posts(user):
         dict: All posts from a given user, concatenated into a single text string.
     """
     posts = user_posts.get(user["user_id"], [])
-    if len(posts) == 0:
-        raise ValueError(f"User \"{user['user_id']}\" found to be without any posts!")
+    # if len(posts) == 0:
+    #     raise ValueError(f"User \"{user['user_id']}\" found to be without any posts!")
     try:
         return {"text": separator.join(posts[:10]) if posts else None}
     except TypeError:
