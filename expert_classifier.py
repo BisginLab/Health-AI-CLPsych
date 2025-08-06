@@ -51,7 +51,10 @@ def get_matching_posts(user):
     posts = user_posts.get(user["user_id"], [])
     if len(posts) == 0:
         raise ValueError(f"User \"{user['user_id']}\" found to be without any posts!")
-    return {"text": separator.join(posts[:10]) if posts else None}
+    try:
+        return {"text": separator.join(posts[:10]) if posts else None}
+    except TypeError:
+        return {"text": None}
 
 def clean_label(pred):
     """This function extracts the first occurrence of a match from the prediction string."""
