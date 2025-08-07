@@ -4,6 +4,12 @@ from huggingface_hub import login
 import os
 import re
 from collections import defaultdict
+import argparse
+
+parser = argparse.ArgumentParser(description="Process model and output csv.")
+parser.add_argument("--model", type=str, help="Model name")
+parser.add_argument("--output", type=str, default="", help="Name of output csv")
+args = parser.parse_args()
 
 token = os.getenv('token')
 assert token, "Environment variable 'token' is not set"
@@ -11,10 +17,10 @@ login(token)
 
 ######
 print("Note for Logs: This is the expert classifier")
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
+model_name = args.model
 df_X_path = "../expert/expert_posts.csv"
 df_y_path = "../expert/expert.csv"
-output_path = "../results/expert-llama-3b.csv"
+output_path = f"../results/expert-{args.output}"
 separator = "\n\n"
 
 ######

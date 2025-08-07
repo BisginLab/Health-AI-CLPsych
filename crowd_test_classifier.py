@@ -3,17 +3,23 @@ import datasets as ds
 from huggingface_hub import login
 import os
 import re
+import argparse
+
+parser = argparse.ArgumentParser(description="Process model and output csv.")
+parser.add_argument("--model", type=str, help="Model name")
+parser.add_argument("--output", type=str, default="", help="Name of output csv")
+args = parser.parse_args()
 
 token = os.getenv('token')
 assert token, "Environment variable 'token' is not set"
 login(token)
 
 ######
-
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
+print("Note for Logs: This is the crowd test classifier")
+model_name = args.model
 df_X_path = "../crowd-test/shared_task_posts_test.csv"
 df_y_path = "../crowd-test/crowd_test.csv"
-output_path = "../results/crowd-test-llama-3b.csv"
+output_path = f"../results/crowd-test-{args.output}"
 
 ######
 
