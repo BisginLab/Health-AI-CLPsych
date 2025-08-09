@@ -4,6 +4,7 @@ from huggingface_hub import login
 import os
 import re
 import argparse
+from collections import defaultdict
 
 parser = argparse.ArgumentParser(description="Process model and output csv.")
 parser.add_argument("--model", type=str, help="Model name")
