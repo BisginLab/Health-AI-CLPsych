@@ -5,7 +5,7 @@ from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 
 print("Loading Dataset...")
-pre_label_df = pd.read_csv('/home/umflint.edu/brayclou/Health-AI-CLPsych/results/baseline_llama_predictions.csv', header=0)
+pre_label_df = pd.read_csv('/home/brayden/GitHub/Health-AI-CLPsych/results/expert-gemma-2-2b.csv', header=0)
 label_df = pre_label_df.iloc[0: len(pre_label_df)]#Ensure that this properly takes into account the train test split
 
 y_true = label_df['raw_label'].tolist() 
