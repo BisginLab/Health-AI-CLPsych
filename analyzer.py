@@ -4,6 +4,16 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 
+"""
+- What is this script?
+Analyzer.py takes the output from the classifier scripts I have made, and check for metrics from each.
+Planned additions in the future include: OvA auc-roc
+
+- Why was it made separately from the classifiers?
+This way, I can modify my classifiers as much as I want, and as long as they save the csv predictions properly I will have a consistently working analyzer.  
+Additionally, this way I can save my predictions to a csv, stopping certain information loss issues that I had early in the project.
+"""
+
 print("Loading Dataset...")
 pre_label_df = pd.read_csv('/home/brayden/GitHub/Health-AI-CLPsych/results/expert-gemma-2-2b.csv', header=0)
 label_df = pre_label_df.iloc[0: len(pre_label_df)]#Ensure that this properly takes into account the train test split
