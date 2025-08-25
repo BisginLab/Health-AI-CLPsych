@@ -6,6 +6,18 @@ from huggingface_hub import login
 import os
 from collections import defaultdict
 
+"""
+- This is the current iteration of the fine-tuning script I created for supervised llm generation.  It trains on
+the expert labeled data, in order to hopefully get the most skilled classification competence possible.
+
+- Why does this new script replace the older supervised summarizer?
+The old script had a couple main issues that made it unworkable.  First, it trained the model at a post level, dispite having only 
+user level labels available.  This caused the output to become garbled.  Second, the loss was bouncing all over the place in the old
+script and I couldn't figure out why(though it was probably because of the first issue.)  Finally, the code was just bad in general, and I had learned
+more since that attempt.  While I could have modified the old script instead of starting from scratch, the effort involved would likely have been greater
+what with the old code causing errors in the new code.
+"""
+
 #Log in to huggingface with api token
 token = os.getenv("HF_TOKEN")
 assert token, "HF_TOKEN not set correctly!"
