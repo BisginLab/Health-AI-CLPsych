@@ -5,6 +5,18 @@ import os
 import re
 import argparse
 
+"""
+- This script handles the crowd test predictions for a model that is passed in via args.  This script works agnostic of model inputted.
+
+- Why are there three scripts instead of one?
+I did it this way because the data csvs had inconsitencies in their column names that kept giving me errors.  
+Additionally, it allowed me to do side-by-side comparisons when trying to make the larger datasets process more efficiently.
+
+- Why are the model and outputs passed in as args instead of initialized as in-script variables?
+Because I had to run my experiments on cluster, I was originally forced to do a commit and pull request with each new model attempt.
+This way, I only need to do a small edit in the slurm script.
+"""
+
 parser = argparse.ArgumentParser(description="Process model and output csv.")
 parser.add_argument("--model", type=str, help="Model name")
 parser.add_argument("--output", type=str, default="", help="Name of output csv")
