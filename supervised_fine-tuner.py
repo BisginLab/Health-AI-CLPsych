@@ -1,10 +1,12 @@
 #Imports
 import peft
-from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments, set_seed
+from peft import prepare_model_for_kbit_training
+from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments, set_seed, BitsAndBytesConfig
 import datasets as ds
 from huggingface_hub import login
 import os
 from collections import defaultdict
+from dotenv import load_dotenv
 
 """
 - This is the current iteration of the fine-tuning script I created for supervised llm generation.  It trains on
@@ -18,25 +20,42 @@ more since that attempt.  While I could have modified the old script instead of 
 what with the old code causing errors in the new code.
 """
 
+
 #Log in to huggingface with api token
+load_dotenv()
 token = os.getenv("HF_TOKEN")
 assert token, "HF_TOKEN not set correctly!"
 login(token)
 set_seed(35)
 
+#Set up bitsandbytes
+bitsandbytes_config = BitsAndBytesConfig(
+    load_in_8bit=True,
+    llm_int8_threshold=6.0
+)
+
 #Defined changable variables
 model_name = "google/gemma-2-2b"
-feature_df_name = "expert.csv"
-label_df_name = "expert_posts.csv"
+feature_df_name = "../expert/expert_posts.csv"
+label_df_name = "../expert/expert.csv"
 max_posts_per_user = 10
-output_dir = "temp_dir" #NOTE: Needs filling upon use
+max_token_lenth_cap = 4048
+output_dir = "../finetuned/gemma-base-finetuned"
 
 #Load model
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "right"
-untuned_model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", load_in_8bit=True) #NOTE: need to remvoe if bitsandbytes fails
+untuned_model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", quantization_config=bitsandbytes_config)
+untuned_model = prepare_model_for_kbit_training(untuned_model)
 untuned_model.config.pad_token_id = tokenizer.pad_token_id
+
+#If model's max length is an effective infinite, cap at a given number
+model_max_len = tokenizer.model_max_length
+if model_max_len > 100000:
+    print("model's max token length set extremely high; capping to default")
+    model_max_len = max_token_lenth_cap
+    
 
 #Load dataset
 df_X = ds.load_dataset("csv", data_files=feature_df_name)["train"]
@@ -45,14 +64,14 @@ df_y = ds.load_dataset("csv", data_files=label_df_name)["train"]
 #Preprocess dataset
 user_posts = defaultdict(list)
 for row in df_X:
-    #only append if user post count hasn't capped out
-    if len(user_posts[row["user_id"]]) < max_posts_per_user:     #and if row["subreddit"] == "SuicideWatch":
+    if len(user_posts[row["user_id"]]) <max_posts_per_user:
+        if not row["post_body"]:
+            row["post_body"] = ""
         user_posts[row["user_id"]].append(row["post_body"])
-#Cap token count
 
 def preprocess(label_df):
     #convert labels into integer counterparts, 1-4
-    label = label_df["raw_label"]
+    label = label_df["label"]
     label_map = {"a": "1", "b": "2", "c": "3", "d": "4"}
     label = label_map[label] if label in label_map else None
     if label is None:
@@ -70,8 +89,8 @@ def preprocess(label_df):
 
     #If the lenth of the prompt and label is too long, truncate the promp from the left
     full_len = prompt_ids + label_ids
-    if len(full_len) > tokenizer.model_max_length:
-        trimmed_prompt_ids = prompt_ids[-(tokenizer.model_max_length - len(label_ids)):]
+    if len(full_len) > model_max_len:
+        trimmed_prompt_ids = prompt_ids[-(model_max_len - len(label_ids)):]
     else:
         trimmed_prompt_ids = prompt_ids
     input_ids = trimmed_prompt_ids + label_ids
@@ -82,7 +101,7 @@ def preprocess(label_df):
 
     #Add right padding
     pad_id = tokenizer.pad_token_id
-    pad_to = tokenizer.model_max_length - len(input_ids)
+    pad_to = model_max_len - len(input_ids)
     input_ids += [pad_id] * pad_to
     label_masked += [ignore_id] * pad_to
     
@@ -93,9 +112,13 @@ def preprocess(label_df):
 
 #Trigger preprocessing
 df = dict()
+
+#Remove null labels
+df_y = df_y.filter(lambda row: row["label"] != None)
+
 preprocessed_df = df_y.map(preprocess, desc="preprocessing", remove_columns=df_y.column_names)
 df = preprocessed_df.train_test_split(test_size=0.1, seed=35)
-
+print(f"The columns of preprocessed are {preprocessed_df.column_names}")#NOTE: test code
 #Set up lora
 lora_config = peft.LoraConfig(
     r=16,
@@ -122,7 +145,9 @@ trainer_config = TrainingArguments(
     weight_decay=0.0,
     fp16=True,
     save_safetensors=True,
-    optim="paged_adamw_8bit"
+    optim="paged_adamw_8bit",
+    remove_unused_columns=False,
+    label_names=["labels"]
 )
 trainer = Trainer(
     model = peft_model,
