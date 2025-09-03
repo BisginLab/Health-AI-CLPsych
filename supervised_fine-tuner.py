@@ -21,12 +21,10 @@ what with the old code causing errors in the new code.
 
 Changelog:
 - Reduced max token count by 2000
-- added config adjustment to turn expandable_segments to True so that there is less data fragmentation
+- added config adjustment to turn expandable_segments to True so that there is less data fragmentation(moved to slurm script)
 - Explicitely set trainer's batch size to 2
 
 """
-
-PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 #Log in to huggingface with api token
 load_dotenv()
