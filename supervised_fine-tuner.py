@@ -18,8 +18,15 @@ user level labels available.  This caused the output to become garbled.  Second,
 script and I couldn't figure out why(though it was probably because of the first issue.)  Finally, the code was just bad in general, and I had learned
 more since that attempt.  While I could have modified the old script instead of starting from scratch, the effort involved would likely have been greater
 what with the old code causing errors in the new code.
+
+Changelog:
+- Reduced max token count by 2000
+- added config adjustment to turn expandable_segments to True so that there is less data fragmentation
+- Explicitely set trainer's batch size to 2
+
 """
 
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 #Log in to huggingface with api token
 load_dotenv()
@@ -39,7 +46,7 @@ model_name = "google/gemma-2-2b"
 feature_df_name = "../expert/expert_posts.csv"
 label_df_name = "../expert/expert.csv"
 max_posts_per_user = 10
-max_token_lenth_cap = 4048
+max_token_lenth_cap = 2048
 output_dir = "../finetuned/gemma-base-finetuned"
 
 #Load model
@@ -139,7 +146,7 @@ trainer_config = TrainingArguments(
     logging_dir=f"{output_dir}/.logs",
     save_steps=500,
     eval_strategy="steps",
-    gradient_accumulation_steps=3,
+    gradient_accumulation_steps=6,
     learning_rate=2e-4,
     max_grad_norm=1.0,
     weight_decay=0.0,
@@ -147,7 +154,9 @@ trainer_config = TrainingArguments(
     save_safetensors=True,
     optim="paged_adamw_8bit",
     remove_unused_columns=False,
-    label_names=["labels"]
+    label_names=["labels"],
+    per_device_train_batch_size=2,
+    per_device_eval_batch_size=2,
 )
 trainer = Trainer(
     model = peft_model,
