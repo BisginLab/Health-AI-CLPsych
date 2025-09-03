@@ -1,4 +1,5 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from peft import PeftModel
 import datasets as ds
 from huggingface_hub import login
 import os
@@ -19,6 +20,7 @@ This way, I only need to do a small edit in the slurm script.
 
 parser = argparse.ArgumentParser(description="Process model and output csv.")
 parser.add_argument("--model", type=str, help="Model name")
+parser.add_argument("--adapter_dir", type=str, default="", help="Path to adapter save directory.  Leave blank for base model classification."
 parser.add_argument("--output", type=str, default="", help="Name of output csv")
 args = parser.parse_args()
 
@@ -29,18 +31,55 @@ login(token)
 ######
 print("Note for Logs: This is the crowd test classifier")
 model_name = args.model
+adapter = args.adapter_dir
 df_X_path = "../crowd-test/shared_task_posts_test.csv"
 df_y_path = "../crowd-test/crowd_test.csv"
 output_path = f"../results/crowd-test-{args.output}"
 
 ######
 
+def load_model(model_name: str, adapter_dir: str, tokenizer_for_eos):
+    """
+    This function handles the instantiation and loading of the huggingface model.  It is used instead of a simple AutoModelForCausalLM call
+    so that if a fine-tuned model adapter is present and passed in as an argument, it is merged into the model for use in inference.
+
+    args:
+        model_name (str): the huggingface repo name for the model
+        adapter_dir (str): the directory path to the saved model weights.  ENSURE that these model weights are only applied to their
+                           appropriate model.
+        tokenizer_for_eos: Passes in the tokenizer so AutoModelForCausalLM can set eos_token_id on the model.
+    returns: 
+        output_model: The final model, fine-tuned or base depending on whether adapter_dir is passed in as an empty string.
+    """
+    if adapter_dir == "":
+
+        #Load the base model.
+        output_model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_token_id=tokenizer_for_eos.eos_token_id)
+        return output_model
+    else:
+        #Use the same conf as when finetuning?
+        bitsandbytes_config = BitsAndBytesConfig(
+            load_in_8bit=True,
+            llm_int8_threshold=6.0
+        )
+
+        #Load base model, but with config for quantization
+        base_model = AutoModelForCausalLM.from_pretrained(
+            model_name, 
+            device_map="auto", 
+            pad_token_id=tokenizer_for_eos.eos_token_id, 
+            quantization_config=bitsandbytes_config
+        )
+
+        #base_model.config.use_cache=False #NOTE: Suggested by GPT, need to figure out if it is helpful or not before implementing
+        #Take base model, and merge adapters to it.
+
 #load model and tokenizer
 print("Loading model and tokenizer...")
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token  # Set pad token to eos token for Llama models
-model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", pad_token_id=tokenizer.eos_token_id)
+model = load_model(model_name, adapter, tokenizer)
 
 #Load in /shared/DATA/reddit/crowd/test/shared_task_posts_test.csv for post level features
 df_X = ds.load_dataset("csv", data_files=df_X_path)['train']#/shared/DATA/reddit/crowd/test
