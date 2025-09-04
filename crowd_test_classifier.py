@@ -20,7 +20,7 @@ This way, I only need to do a small edit in the slurm script.
 
 parser = argparse.ArgumentParser(description="Process model and output csv.")
 parser.add_argument("--model", type=str, help="Model name")
-parser.add_argument("--adapter_dir", type=str, default="", help="Path to adapter save directory.  Leave blank for base model classification."
+parser.add_argument("--adapter_dir", type=str, default="", help="Path to adapter save directory.  Leave blank for base model classification.")
 parser.add_argument("--output", type=str, default="", help="Name of output csv")
 args = parser.parse_args()
 
@@ -73,6 +73,7 @@ def load_model(model_name: str, adapter_dir: str, tokenizer_for_eos):
 
         #base_model.config.use_cache=False #NOTE: Suggested by GPT, need to figure out if it is helpful or not before implementing
         #Take base model, and merge adapters to it.
+        output_model = PeftModel.from_pretrained(base_model, adapter_dir
 
 #load model and tokenizer
 print("Loading model and tokenizer...")
@@ -80,6 +81,7 @@ print("Loading model and tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token  # Set pad token to eos token for Llama models
 model = load_model(model_name, adapter, tokenizer)
+model.eval()
 
 #Load in /shared/DATA/reddit/crowd/test/shared_task_posts_test.csv for post level features
 df_X = ds.load_dataset("csv", data_files=df_X_path)['train']#/shared/DATA/reddit/crowd/test
@@ -134,7 +136,8 @@ def get_predictions(batch):
 
     #record length of prompt, so that the script doesn't need to decode that part.
     input_ids = tokenized_inputs['input_ids']
-    input_lengths = [len(seq) for seq in input_ids]
+    #input_lengths = [len(seq) for seq in input_ids] #NOTE: Testing replacement of this with below line by recommendation of gpt
+    lengths = tokenized_inputs["attention_mask"].sum(dim=1).tolist()
 
     responses = model.generate(
         **tokenized_inputs,
