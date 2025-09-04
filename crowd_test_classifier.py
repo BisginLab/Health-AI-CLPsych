@@ -138,7 +138,7 @@ def get_predictions(batch):
     #record length of prompt, so that the script doesn't need to decode that part.
     input_ids = tokenized_inputs['input_ids']
     #input_lengths = [len(seq) for seq in input_ids] #NOTE: Testing replacement of this with below line by recommendation of gpt
-    lengths = tokenized_inputs["attention_mask"].sum(dim=1).tolist()
+    input_lengths = tokenized_inputs["attention_mask"].sum(dim=1).tolist()
 
     responses = model.generate(
         **tokenized_inputs,
