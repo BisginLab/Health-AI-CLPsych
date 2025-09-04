@@ -73,7 +73,7 @@ def load_model(model_name: str, adapter_dir: str, tokenizer_for_eos):
 
         #base_model.config.use_cache=False #NOTE: Suggested by GPT, need to figure out if it is helpful or not before implementing
         #Take base model, and merge adapters to it.
-        output_model = PeftModel.from_pretrained(base_model, adapter_dir
+        output_model = PeftModel.from_pretrained(base_model, adapter_dir)
 
 #load model and tokenizer
 print("Loading model and tokenizer...")
