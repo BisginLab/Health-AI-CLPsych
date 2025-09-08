@@ -1,5 +1,6 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import datasets as ds
+from peft import PeftModel
 from huggingface_hub import login
 import os
 import re
