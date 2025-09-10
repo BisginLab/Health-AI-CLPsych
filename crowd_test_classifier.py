@@ -121,11 +121,21 @@ def clean_label(pred):
     except TypeError:
         return "?"
 
-def get_predictions(batch):
-    prompts = [ 
-        f'"{text}"\nIn rating how suicidal the author of the above message is from 1(not suicidal) to 4(extremely suicidal), I choose ' for text in batch['text']
-    ]
 
+def generate(prompts, max_n_tokens: int):
+    """
+    This function handles the generation by the llm, using a custom data collator.  This will allow for the script to
+    have more than one generation step without bloat(summarization step and prediction step)
+
+    Args:
+    - prompts(list: str)  contains the input to the model, already formatted with the instruction for output.
+    - max_n_tokens(int)  how many tokens the model is allowed to generate at this call
+
+    Returns:
+    - A dictionary containing two entries:
+    -- predictions: The cleaned version of raw_predictions, with just the predicted labels as strings.
+    -- raw_predictions: the full output from each llm generation, saved for debugging purposes
+    """
     #Tokenize prompts
     tokenized_inputs = tokenizer(
         prompts,
@@ -142,7 +152,7 @@ def get_predictions(batch):
 
     responses = model.generate(
         **tokenized_inputs,
-        max_new_tokens=15,
+        max_new_tokens=max_n_tokens,
         do_sample=False,
         num_beams=1,
         use_cache=True
@@ -160,6 +170,17 @@ def get_predictions(batch):
         "predictions": predictions,
         "raw_predictions": decoded_responses
     }
+
+def get_predictions(batch):
+    #Do summarization step #NOTE: Placeholder llm instruction, need to make it match the the tone of the prediction step
+    formatted_sum_prompt = [f"{raw_text}\nSummarize the user's posts in one hundred words or less, representing each of the posts\' intent as a sentence each: " for raw_text in batch['text']]
+    summarized_prompts = generate(formatted_sum_prompt, max_n_tokens = 100)    
+    
+    #Do formatting and trigger prediction
+    formatted_prompts = [f'"{text}"\nIn rating how suicidal the author of the above message is from 1(not suicidal) to 4(extremely suicidal), I choose ' for text in summarized_prompts]
+    predictions = generate(formatted_prompts, max_n_tokens = 15)
+    
+    return predictions
 
 
 #Create a single dataset out of the key-value pairs of the original dataset
