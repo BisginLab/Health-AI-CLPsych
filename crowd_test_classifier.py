@@ -177,7 +177,7 @@ def get_predictions(batch):
     summarized_prompts = generate(formatted_sum_prompt, max_n_tokens = 100)    
     
     #Do formatting and trigger prediction
-    formatted_prompts = [f'"{text}"\nIn rating how suicidal the author of the above message is from 1(not suicidal) to 4(extremely suicidal), I choose ' for text in summarized_prompts]
+    formatted_prompts = [f'"{text}"\nIn rating how suicidal the author of the above message is from the options 1(not suicidal), 2(hints of suicidal intent), 3(moderately suicidal) and 4(at extreme risk of suicide), I choose ' for text in summarized_prompts]
     predictions = generate(formatted_prompts, max_n_tokens = 15)
     
     return predictions
