@@ -123,7 +123,7 @@ def clean_label(pred):
 
 def get_predictions(batch):
     prompts = [ 
-        f'"{text}"\nIn rating how suicidal the author of the above message is from 1(not suicidal) to 4(extremely suicidal), I choose ' for text in batch['text']
+        f'"{text}"\nIn rating how suicidal the author of the above message is from the options 1(not suicidal), 2(hints of suicidal intent), 3(moderately suicidal) and 4(at extreme risk of suicide), I choose ' for text in batch['text']
     ]
 
     #Tokenize prompts
