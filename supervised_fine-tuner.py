@@ -149,6 +149,7 @@ trainer_config = TrainingArguments(
     max_grad_norm=1.0,
     weight_decay=0.0,
     fp16=True,
+    epoch=20,
     save_safetensors=True,
     optim="paged_adamw_8bit",
     remove_unused_columns=False,
