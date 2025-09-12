@@ -45,7 +45,7 @@ feature_df_name = "../expert/expert_posts.csv"
 label_df_name = "../expert/expert.csv"
 max_posts_per_user = 10
 max_token_lenth_cap = 2048
-output_dir = "../finetuned/llama-3.2-base-finetuned"
+output_dir = "../finetuned/llama-3.2-base-finetuned-50epoch"
 
 #Load model
 tokenizer = AutoTokenizer.from_pretrained(model_name)
