@@ -7,6 +7,7 @@ from huggingface_hub import login
 import os
 from collections import defaultdict
 from dotenv import load_dotenv
+import argparse
 
 """
 - This is the current iteration of the fine-tuning script I created for supervised llm generation.  It trains on
@@ -26,6 +27,12 @@ Changelog:
 
 """
 
+parser = argparse.ArgumentParser(description="Process model and output csv.")
+parser.add_argument("--model", type=str, help="Model name")
+parser.add_argument("--epochs", type=int, default=25, help="How many epochs the model will be fine-tuned for")
+parser.add_argument("--output", type=str, default="", help="Name of output folder")
+args = parser.parse_args()
+
 #Log in to huggingface with api token
 load_dotenv()
 token = os.getenv("HF_TOKEN")
@@ -40,12 +47,12 @@ bitsandbytes_config = BitsAndBytesConfig(
 )
 
 #Defined changable variables
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
+model_name = "args.model"
 feature_df_name = "../expert/expert_posts.csv"
 label_df_name = "../expert/expert.csv"
 max_posts_per_user = 10
 max_token_lenth_cap = 2048
-output_dir = "../finetuned/llama-3.2-base-finetuned-50epoch"
+output_dir = f"../finetuned/{args.output)"
 
 #Load model
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -84,7 +91,7 @@ def preprocess(label_df):
 
     #Retrieve current_labels matching posts, then join them together
     posts = "\n".join(user_posts[label_df["user_id"]])
-    prompt = f"{posts}\nIn rating how suicidal the author of the above message is from 1(not suicidal) to 4(extremely suicidal), I choose "
+    prompt = f"{posts}\nIn rating how suicidal the author of the above message is from the options 1(not suicidal), 2(hints of suicidal intent), 3(moderately suicidal) and 4(at extreme risk of suicide), I choose "
     
     #Tokenize
     prompt_ids = tokenizer(prompt, add_special_tokens=False)["input_ids"]
@@ -149,7 +156,7 @@ trainer_config = TrainingArguments(
     max_grad_norm=1.0,
     weight_decay=0.0,
     fp16=True,
-    num_train_epochs=25,
+    num_train_epochs=args.epochs,
     save_safetensors=True,
     optim="paged_adamw_8bit",
     remove_unused_columns=False,
