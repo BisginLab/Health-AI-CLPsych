@@ -47,7 +47,7 @@ bitsandbytes_config = BitsAndBytesConfig(
 )
 
 #Defined changable variables
-model_name = args.model
+model_name = args.model #test comment, please ignore
 feature_df_name = "../expert/expert_posts.csv"
 label_df_name = "../expert/expert.csv"
 max_posts_per_user = 10
