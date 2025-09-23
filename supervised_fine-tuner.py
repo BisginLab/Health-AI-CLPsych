@@ -47,7 +47,7 @@ bitsandbytes_config = BitsAndBytesConfig(
 )
 
 #Defined changable variables
-model_name = args.model #test comment, please ignore
+model_name = args.model 
 feature_df_name = "../expert/expert_posts.csv"
 label_df_name = "../expert/expert.csv"
 max_posts_per_user = 10
@@ -84,14 +84,14 @@ for row in df_X:
 def preprocess(label_df):
     #convert labels into integer counterparts, 1-4
     label = label_df["label"]
-    label_map = {"a": "1", "b": "2", "c": "3", "d": "4"}
+    label_map = {None: "no", "b": "yes", "c": "yes", "d": "yes"}
     label = label_map[label] if label in label_map else None
     if label is None:
         raise ValueError(f"Label {label} not found in label map for user {label_df['user_id']}!")
 
     #Retrieve current_labels matching posts, then join them together
     posts = "\n".join(user_posts[label_df["user_id"]])
-    prompt = f"{posts}\nIn rating how suicidal the author of the above message is from the options 1(not suicidal), 2(hints of suicidal intent), 3(moderately suicidal) and 4(at extreme risk of suicide), I choose "
+    prompt = f"{posts}\nIs the author of the post suicidal? yes or no.  Answer: "
     
     #Tokenize
     prompt_ids = tokenizer(prompt, add_special_tokens=False)["input_ids"]
@@ -125,8 +125,8 @@ def preprocess(label_df):
 #Trigger preprocessing
 df = dict()
 
-#Remove null labels
-df_y = df_y.filter(lambda row: row["label"] != None)
+#Remove "a" labels
+df_y = df_y.filter(lambda row: row["label"] != "a")
 
 preprocessed_df = df_y.map(preprocess, desc="preprocessing", remove_columns=df_y.column_names)
 df = preprocessed_df.train_test_split(test_size=0.1, seed=35)

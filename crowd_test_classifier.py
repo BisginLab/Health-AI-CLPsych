@@ -106,24 +106,15 @@ def get_matching_posts(user):
 
 def clean_label(pred):
     """This function extracts the first occurrence of a match from the prediction string."""
-    match = re.search(r'(1|2|3|4)', pred.lower())
+    match = re.search(r'(yes|no)', pred.lower())
     try:
-        if match[0] == "1":
-            return "a"
-        elif match[0] == "2":
-            return "b"
-        elif match[0] == "3":
-            return "c"
-        elif match[0] == "4":
-            return "d"
-        else:
-            return "?"
-    except TypeError:
+        return match[0]
+    except:
         return "?"
 
 def get_predictions(batch):
     prompts = [ 
-        f'"{text}"\nIn rating how suicidal the author of the above message is from the options 1(not suicidal), 2(hints of suicidal intent), 3(moderately suicidal) and 4(at extreme risk of suicide), I choose ' for text in batch['text']
+        f'"{text}"\nIs the author of the post suicidal? yes or no.  Answer: ' for text in batch['text']
     ]
 
     #Tokenize prompts
@@ -142,7 +133,7 @@ def get_predictions(batch):
 
     responses = model.generate(
         **tokenized_inputs,
-        max_new_tokens=15,
+        max_new_tokens=2,
         do_sample=False,
         num_beams=1,
         use_cache=True
@@ -171,7 +162,7 @@ print(f"Mapped dataset columns: {df.column_names}")
 print(f"Mapped dataset size: {len(df)}")
 
 #remove rows where df['raw_label'] is equal to the string 'nan'
-df = df.filter(lambda x: x['raw_label'] != None, batched=False)
+df = df.filter(lambda x: x['raw_label'] != "a", batched=False)
 print("Nones filtered out")
 
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
