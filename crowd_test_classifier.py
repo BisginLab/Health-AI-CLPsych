@@ -102,7 +102,7 @@ def get_matching_posts(user):
     """
     user_id = user['user_id']
     matching_posts = df_X.filter(lambda row: row['user_id'] == user_id)
-    return {"text": separator.join([row['post_body'] for row in matching_posts if row['post_body'] is not None and row["subreddit"] == "SuicideWatch"][:10])}
+    return {"text": separator.join([row['post_body'] for row in matching_posts if row['post_body'] is not None][:10])}
 
 def clean_label(pred):
     """This function extracts the first occurrence of a match from the prediction string."""
