@@ -55,9 +55,11 @@ max_token_lenth_cap = 2048
 output_dir = f"../finetuned/{args.output}"
 
 #Load model
+print("Setting tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "right"
+print("Loading model in kbit...")
 untuned_model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", quantization_config=bitsandbytes_config)
 untuned_model = prepare_model_for_kbit_training(untuned_model)
 untuned_model.config.pad_token_id = tokenizer.pad_token_id
@@ -70,10 +72,12 @@ if model_max_len > 100000:
     
 
 #Load dataset
+print("Loading dataset...")
 df_X = ds.load_dataset("csv", data_files=feature_df_name)["train"]
 df_y = ds.load_dataset("csv", data_files=label_df_name)["train"]
 
 #Preprocess dataset
+print("Sorting dataset into defaultdict...")
 user_posts = defaultdict(list)
 for row in df_X:
     if len(user_posts[row["user_id"]]) <max_posts_per_user:
@@ -122,15 +126,15 @@ def preprocess(label_df):
     #Return result
     return {"input_ids": input_ids, "labels": label_masked, "attention_mask": attention_mask}
 
-#Trigger preprocessing
-df = dict()
-
 #Remove "a" labels
 df_y = df_y.filter(lambda row: row["label"] != "a")
 
+#Trigger preprocessing
+print("Preprocessing sorted dataset...")
 preprocessed_df = df_y.map(preprocess, desc="preprocessing", remove_columns=df_y.column_names)
+df = dict()
 df = preprocessed_df.train_test_split(test_size=0.1, seed=35)
-print(f"The columns of preprocessed are {preprocessed_df.column_names}")#NOTE: test code
+
 #Set up lora
 lora_config = peft.LoraConfig(
     r=16,
@@ -174,8 +178,13 @@ trainer = Trainer(
 )
 
 #Trigger supervised learning
+print("Printing trainable params...")
 peft_model.print_trainable_parameters()
+
+print("Beginning training...")
 trainer.train()
 
 #Save model
+print("Saving model...")
 peft_model.save_pretrained(f"{output_dir}/lora-finetuned")
+print(f"Model saved to {output_dir}/lora-finetuned")
