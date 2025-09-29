@@ -19,12 +19,6 @@ user level labels available.  This caused the output to become garbled.  Second,
 script and I couldn't figure out why(though it was probably because of the first issue.)  Finally, the code was just bad in general, and I had learned
 more since that attempt.  While I could have modified the old script instead of starting from scratch, the effort involved would likely have been greater
 what with the old code causing errors in the new code.
-
-Changelog:
-- Reduced max token count by 2000
-- added config adjustment to turn expandable_segments to True so that there is less data fragmentation(moved to slurm script)
-- Explicitely set trainer's batch size to 2
-
 """
 
 parser = argparse.ArgumentParser(description="Process model and output csv.")
@@ -135,7 +129,7 @@ preprocessed_df = df_y.map(preprocess, desc="preprocessing", remove_columns=df_y
 df = dict()
 df = preprocessed_df.train_test_split(test_size=0.1, seed=35)
 print(f"length of dataset is {len(df['train'])}!")
-exit()
+
 #Set up lora
 lora_config = peft.LoraConfig(
     r=16,
