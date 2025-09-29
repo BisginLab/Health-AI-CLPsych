@@ -32,8 +32,8 @@ login(token)
 print("Note for Logs: This is the crowd test classifier")
 model_name = args.model
 adapter = args.adapter_dir
-df_X_path = "../crowd-test/shared_task_posts_test.csv"
-df_y_path = "../crowd-test/crowd_test.csv"
+df_X_path = "../expert/expert_posts.csv"
+df_y_path = "../expert/expert.csv"
 output_path = f"../results/crowd-test-{args.output}"
 
 ######
@@ -89,6 +89,9 @@ df_X = ds.load_dataset("csv", data_files=df_X_path)['train']#/shared/DATA/reddit
 #Load in /shared/DATA/reddit/crowd/test/crowd_test.csv for user level labels
 df_y = ds.load_dataset("csv", data_files=df_y_path)['train']#/shared/DATA/reddit/crowd/test
 separator = "\n\n"
+
+#Because the different datasets have different column naming conventions, rename label to raw_label
+df_y = df_y.rename_column("label", "raw_label")
 
 def get_matching_posts(user):
     """
