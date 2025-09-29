@@ -133,7 +133,7 @@ def get_predictions(batch):
 
     responses = model.generate(
         **tokenized_inputs,
-        max_new_tokens=2,
+        max_new_tokens=4,
         do_sample=False,
         num_beams=1,
         use_cache=True
@@ -167,6 +167,9 @@ print("Nones filtered out")
 
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
 print("Predictions generated")
+
+#Dropping text column for easier readability
+df = df.remove_columns("text")
 
 df.to_pandas().to_csv(output_path, index=True)#/home/umflint.edu/brayclou/Health-AI-CLPsych/results
 print(f"Predictions saved to {output_path}")
