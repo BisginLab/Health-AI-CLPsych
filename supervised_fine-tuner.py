@@ -134,7 +134,8 @@ print("Preprocessing sorted dataset...")
 preprocessed_df = df_y.map(preprocess, desc="preprocessing", remove_columns=df_y.column_names)
 df = dict()
 df = preprocessed_df.train_test_split(test_size=0.1, seed=35)
-
+print(f"length of dataset is {len(df['train'])}!")
+exit()
 #Set up lora
 lora_config = peft.LoraConfig(
     r=16,
