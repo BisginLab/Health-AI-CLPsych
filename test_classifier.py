@@ -32,8 +32,8 @@ login(token)
 print("Note for Logs: This is the crowd test classifier")
 model_name = args.model
 adapter = args.adapter_dir
-df_X_path = "../crowd-test/shared_task_posts_test.csv"
-df_y_path = "../crowd-test/crowd_test.csv"
+df_X_path = "../expert/expert_posts.csv"
+df_y_path = "../expert/expert.csv"
 output_path = f"../results/crowd-test-{args.output}"
 
 ######
@@ -90,6 +90,9 @@ df_X = ds.load_dataset("csv", data_files=df_X_path)['train']#/shared/DATA/reddit
 df_y = ds.load_dataset("csv", data_files=df_y_path)['train']#/shared/DATA/reddit/crowd/test
 separator = "\n\n"
 
+#Because the different datasets have different column naming conventions, rename label to raw_label
+df_y = df_y.rename_column("label", "raw_label")
+
 def get_matching_posts(user):
     """
     This function takes a dataset row from a y dataset, and stiches together data from both X and y into a user-level, matched dataset.
@@ -114,7 +117,7 @@ def clean_label(pred):
 
 def get_predictions(batch):
     prompts = [ 
-        f'"{text}"\nIs the author of the post suicidal? yes or no.  Answer: ' for text in batch['text']
+        f'"{text}"\nIs the author of the post suicidal? yes or no.  Answer: </s>' for text in batch['text']
     ]
 
     #Tokenize prompts

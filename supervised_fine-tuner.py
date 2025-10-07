@@ -42,8 +42,10 @@ bitsandbytes_config = BitsAndBytesConfig(
 
 #Defined changable variables
 model_name = args.model 
-feature_df_name = "../expert/expert_posts.csv"
-label_df_name = "../expert/expert.csv"
+crowd_test_feature_df_name = "../crowd-test/shared_task_posts_test.csv"
+crowd_test_label_df_name = "../crowd-test/crowd_test.csv"
+crowd_train_feature_df_name = "../crowd-train/shared_task_posts.csv"
+crowd_train_label_df_name = "../crowd-train/crowd_train.csv"
 max_posts_per_user = 10
 max_token_lenth_cap = 2048
 output_dir = f"../finetuned/{args.output}"
@@ -67,8 +69,14 @@ if model_max_len > 100000:
 
 #Load dataset
 print("Loading dataset...")
-df_X = ds.load_dataset("csv", data_files=feature_df_name)["train"]
-df_y = ds.load_dataset("csv", data_files=label_df_name)["train"]
+df_X_1 = ds.load_dataset("csv", data_files=crowd_test_feature_df_name)["train"]
+df_y_1 = ds.load_dataset("csv", data_files=crowd_test_label_df_name)["train"]
+df_y_1 = df_y_1.rename_column("raw_label", "label")
+df_X_2 = ds.load_dataset("csv", data_files=crowd_train_feature_df_name)["train"]
+df_y_2 = ds.load_dataset("csv", data_files=crowd_train_label_df_name)["train"]
+
+df_X = ds.concatenate_datasets([df_X_1, df_X_2])
+df_y = ds.concatenate_datasets([df_y_1, df_y_2])
 
 #Preprocess dataset
 print("Sorting dataset into defaultdict...")
