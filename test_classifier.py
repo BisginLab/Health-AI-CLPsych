@@ -168,7 +168,7 @@ print(f"Mapped dataset size: {len(df)}")
 #remove rows where df['raw_label'] is equal to the string 'nan'
 df = df.filter(lambda x: x['raw_label'] != "a", batched=False)
 print("Nones filtered out")
-df = ds.from_dict(df[:8]) #<--Debug code to reduce variables
+df = df.select([0,1,2,3,4,5,6,7]) #<--Debug code to reduce variables
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
 
 for datapoint in df:
