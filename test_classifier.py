@@ -117,7 +117,7 @@ def clean_label(pred):
 
 def get_predictions(batch):
     prompts = [ 
-        f'"{text}"\nIs the author of the post suicidal? yes or no.  Answer: </s>' for text in batch['text']
+        f'"{text}"\nIs the author of the post suicidal? yes or no.  Answer: ' for text in batch['text']
     ]
 
     #Tokenize prompts
@@ -136,7 +136,7 @@ def get_predictions(batch):
 
     responses = model.generate(
         **tokenized_inputs,
-        max_new_tokens=4,
+        max_new_tokens=8,
         do_sample=False,
         num_beams=1,
         use_cache=True
@@ -152,7 +152,8 @@ def get_predictions(batch):
 
     return {
         "predictions": predictions,
-        "raw_predictions": decoded_responses
+        "raw_predictions": decoded_responses,
+        "full_prompt": prompts
     }
 
 
@@ -167,9 +168,17 @@ print(f"Mapped dataset size: {len(df)}")
 #remove rows where df['raw_label'] is equal to the string 'nan'
 df = df.filter(lambda x: x['raw_label'] != "a", batched=False)
 print("Nones filtered out")
-
+df = df[:8] #<--Debug code to reduce variables
 df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
+
+for datapoint in df:
+    print(f"ID: {df['user_id']}\n")
+    print(f"PROMPT: \n{df['full_prompt']}\n")
+    print(f"OUTPUT: {df['raw_predictions']}")
+    print("-----------------------------------")
+
 print("Predictions generated")
+exit()
 
 #Dropping text column for easier readability
 df = df.remove_columns("text")
