@@ -4,21 +4,26 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 
-"""
-- What is this script?
-Analyzer.py takes the output from the classifier scripts I have made, and check for metrics from each.
-Planned additions in the future include: OvA auc-roc
-
-- Why was it made separately from the classifiers?
-This way, I can modify my classifiers as much as I want, and as long as they save the csv predictions properly I will have a consistently working analyzer.  
-Additionally, this way I can save my predictions to a csv, stopping certain information loss issues that I had early in the project.
-"""
+directory = '/home/umflint.edu/brayclou/Health-AI-CLPsych(old)/crowd-test-llama-3.2-base.csv'
 
 print("Loading Dataset...")
-pre_label_df = pd.read_csv('/home/brayden/GitHub/Health-AI-CLPsych/results/expert-gemma-2-2b.csv', header=0)
-label_df = pre_label_df.iloc[0: len(pre_label_df)]#Ensure that this properly takes into account the train test split
+pre_label_df = pd.read_csv(directory, header=0)
+iloc_label_df = pre_label_df.iloc[0: len(pre_label_df)]#Ensure that this properly takes into account the train test split
+label_df = iloc_label_df[iloc_label_df["predictions"].astype(str).str.strip() !="?"]
 
-y_true = label_df['raw_label'].tolist() 
+#label_df = iloc_label_df.filter(lambda x: x['raw_label'] != "?")
+pre_y_true = label_df['raw_label'].tolist() 
+print(label_df)
+
+
+y_true = []
+for true in pre_y_true:
+    # print(f"{type(true)}: {true}")
+    if type(true) == float:
+        y_true.append("no")
+    elif true == "b" or true == "c" or true == "d":
+        y_true.append("yes")
+    else: raise ValueError
 y_pred = label_df['predictions'].tolist()
 print("Dataset Loaded...")
 print(f"Size of pre datasset: {len(pre_label_df)}")
@@ -27,19 +32,17 @@ print(f"Size of dataset: {len(y_true)}")
 #Get prediction results
 print("Overall Metrics:")
 print(classification_report(y_true, y_pred, digits=4))
+print(directory)
 
 print(f"Datapoints: {len(y_true)}")
 print(f"Datapoints with predictions: {len(y_pred)}")
-print(f"Instances with no predictions: {len([x for x in y_pred if x == '?'])}")
+print(f"Instances ? predictions: {len([x for x in iloc_label_df['predictions'].tolist() if x == '?'])}\n")
 print(f"Unique labels in true data: {set(y_true)}")
-print(f"Instances of true label 'a': {y_true.count('a')}")
-print(f"Instances of predicted label 'a': {y_pred.count('a')}\n")
-print(f"Instances of true label 'b': {y_true.count('b')}")
-print(f"Instances of predicted label 'b': {y_pred.count('b')}\n")
-print(f"Instances of true label 'c': {y_true.count('c')}")
-print(f"Instances of predicted label 'c': {y_pred.count('c')}\n")
-print(f"Instances of true label 'd': {y_true.count('d')}")
-print(f"Instances of predicted label 'd': {y_pred.count('d')}")
+print(f"Instances of true label 'yes': {y_true.count('yes')}")
+print(f"Instances of predicted label 'yes': {y_pred.count('yes')}\n")
+print(f"Instances of true label 'no': {y_true.count('no')}")
+print(f"Instances of predicted label 'no': {y_pred.count('no')}\n")
+
 
 exit()
 
@@ -57,7 +60,7 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('ROC: Multiclass(a, b, c, d)')
 plt.legend(loc='lower right')
-plt.savefig('/home/umflint.edu/brayclou/Health-AI-CLPsych/results/llama_baseline.png')
+plt.savefig('/home/umflint.edu/brayclou/Health-AI-CLPsych(old)/crowd-test-llama-3.2-base.csv')
 plt.show()
 plt.close()
-print("ROC curve saved as llama_baseline.png")
+print("ROC curve saved as llama_engineered.png")

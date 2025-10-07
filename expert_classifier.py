@@ -130,7 +130,7 @@ def clean_label(pred):
 
 def get_predictions(batch):
     prompts = [ 
-        f'"{text}"\nIs the author of the post suicidal? yes or no.  Answer: ' for text in batch['text']
+        f'"{text}"\nIs the author of the post suicidal? yes or no.  Answer: </s>' for text in batch['text']
     ]
 
     #Tokenize prompts
