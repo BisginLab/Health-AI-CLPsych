@@ -6,29 +6,25 @@ import os
 import re
 import argparse
 import torch
+from tqdm import tqdm
 
 """
 This script handles the crowd test predictions for a model that is passed in via args.  
 This script works agnostic of model inputted.
 """
 
-parser = argparse.ArgumentParser(description="Process model and output csv.")
-parser.add_argument("--model", type=str, help="Model name")
-parser.add_argument("--adapter_dir", type=str, default="", help="Path to adapter save directory.  Leave blank for base model classification.")
-parser.add_argument("--output", type=str, default="", help="Name of output csv")
-args = parser.parse_args()
-
-token = os.getenv('token')
-assert token, "Environment variable 'token' is not set"
-login(token)
+# token = os.getenv('token')
+# assert token, "Environment variable 'token' is not set"
+# login(token)
+login("<token here>")
 
 ######
 print("Note for Logs: This is the crowd test classifier")
-model_name = args.model
-adapter = args.adapter_dir
-df_X_path = "../expert/expert_posts.csv"
-df_y_path = "../expert/expert.csv"
-output_path = f"../results/crowd-test-{args.output}"
+model_name = "HuggingFaceTB/SmolLM3-3B"
+adapter = ""#"/home/umflint.edu/brayclou/Health-AI-CLPsych/finetuned/gemma-10epochs/lora-finetuned"
+df_X_path = "/shared/DATA/reddit/expert/expert_posts.csv"
+df_y_path = "/shared/DATA/reddit/expert/expert.csv"
+output_path = f"/home/umflint.edu/brayclou/Health-AI-CLPsych/results/SmolLM3-base.csv"
 
 ######
 
@@ -101,28 +97,6 @@ def get_matching_posts(user):
     matching_posts = df_X.filter(lambda row: row['user_id'] == user_id)
     return {"text": separator.join([row['post_body'] for row in matching_posts if row['post_body'] is not None][:10])}
 
-def get_predictions(batch):
-    """
-    High level controller of the llm pipeline.
-
-    Args:
-    batch() - A sub-dataframe passed in by a mapping loop.
-
-    Returns:
-    NOTE: Need to add
-    """
-    prompts = [ 
-        f'"{text}"\nIs the author of the post suicidal? yes or no.  Answer: ' for text in batch['text']
-    ]
-    
-    predictions = []
-    for prompt in prompts:
-        full_probabilities = generate(prompt)
-        predictions.append(reduce_to_label(full_probabilities))
-
-    return {"predictions": predictions}
-
-
 def generate(prepared_prompt):
     """
     A function that handles the huggingface api calls for triggering the model directly.
@@ -185,7 +159,16 @@ print(f"Mapped dataset size: {len(df)}")
 df = df.filter(lambda x: x['raw_label'] != "a", batched=False)
 print("Nones filtered out")
 
-df = df.map(get_predictions, batched=True, batch_size=2, desc="Generating predictions")
+predictions = []
+for idx in tqdm(range(len(df))):
+    row = df[idx]
+    text = row["text"]
+    prompt = f'"{text}"\nIs the author of the post suicidal? yes or no.  Answer: '
+    full_probabilities = generate(prompt)
+    predicted_label = reduce_to_label(full_probabilities)
+    predictions.append(predicted_label)
+
+df = df.add_column("predictions", predictions)
 print("Predictions generated")
 
 #Dropping text column for easier readability
