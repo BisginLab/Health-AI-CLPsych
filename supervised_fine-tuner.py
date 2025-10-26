@@ -21,15 +21,15 @@ more since that attempt.  While I could have modified the old script instead of 
 what with the old code causing errors in the new code.
 """
 
-parser = argparse.ArgumentParser(description="Process model and output csv.")
-parser.add_argument("--model", type=str, help="Model name")
-parser.add_argument("--epochs", type=int, default=25, help="How many epochs the model will be fine-tuned for")
-parser.add_argument("--output", type=str, default="", help="Name of output folder")
-args = parser.parse_args()
+# parser = argparse.ArgumentParser(description="Process model and output csv.")
+# parser.add_argument("--model", type=str, help="Model name")
+# parser.add_argument("--epochs", type=int, default=25, help="How many epochs the model will be fine-tuned for")
+# parser.add_argument("--output", type=str, default="", help="Name of output folder")
+# args = parser.parse_args()
 
 #Log in to huggingface with api token
 load_dotenv()
-token = os.getenv("HF_TOKEN")
+token = "<token here>" #os.getenv("HF_TOKEN")
 assert token, "HF_TOKEN not set correctly!"
 login(token)
 set_seed(35)
@@ -41,14 +41,14 @@ bitsandbytes_config = BitsAndBytesConfig(
 )
 
 #Defined changable variables
-model_name = args.model 
-crowd_test_feature_df_name = "../crowd-test/shared_task_posts_test.csv"
-crowd_test_label_df_name = "../crowd-test/crowd_test.csv"
-crowd_train_feature_df_name = "../crowd-train/shared_task_posts.csv"
-crowd_train_label_df_name = "../crowd-train/crowd_train.csv"
+model_name = "HuggingFaceTB/SmolLM3-3B"
+crowd_test_feature_df_name = "/shared/DATA/reddit/crowd/test/shared_task_posts_test.csv"
+crowd_test_label_df_name = "/shared/DATA/reddit/crowd/test/crowd_test.csv"
+crowd_train_feature_df_name = "/shared/DATA/reddit/crowd/train/shared_task_posts.csv"
+crowd_train_label_df_name = "/shared/DATA/reddit/crowd/train/crowd_train.csv"
 max_posts_per_user = 10
 max_token_lenth_cap = 2048
-output_dir = f"../finetuned/{args.output}"
+output_dir = f"/home/umflint.edu/brayclou/Health-AI-CLPsych/finetuned/SmolLM3-10epochs"
 
 #Load model
 print("Setting tokenizer...")
@@ -163,7 +163,7 @@ trainer_config = TrainingArguments(
     max_grad_norm=1.0,
     weight_decay=0.0,
     fp16=True,
-    num_train_epochs=args.epochs,
+    num_train_epochs=10, #args.epochs,
     save_safetensors=True,
     optim="paged_adamw_8bit",
     remove_unused_columns=False,
