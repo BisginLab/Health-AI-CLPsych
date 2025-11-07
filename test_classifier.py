@@ -7,24 +7,24 @@ import re
 import argparse
 import torch
 from tqdm import tqdm
+from dotenv import load_dotenv
 
 """
 This script handles the crowd test predictions for a model that is passed in via args.  
 This script works agnostic of model inputted.
 """
-
-# token = os.getenv('token')
-# assert token, "Environment variable 'token' is not set"
-# login(token)
-login("<token here>")
+load_dotenv()
+token = os.getenv('HF_TOKEN')
+assert token, "Environment variable 'token' is not set"
+login(token)
 
 ######
 print("Note for Logs: This is the crowd test classifier")
-model_name = "HuggingFaceTB/SmolLM3-3B"
-adapter = ""#"/home/umflint.edu/brayclou/Health-AI-CLPsych/finetuned/gemma-10epochs/lora-finetuned"
+model_name = "meta-llama/Llama-3.2-3B-Instruct"
+adapter = "/home/umflint.edu/brayclou/Health-AI-CLPsych/finetuned/llama-2step-10epochs/supervised-finetuned/lora-finetuned"
 df_X_path = "/shared/DATA/reddit/expert/expert_posts.csv"
 df_y_path = "/shared/DATA/reddit/expert/expert.csv"
-output_path = f"/home/umflint.edu/brayclou/Health-AI-CLPsych/results/SmolLM3-base.csv"
+output_path = f"/home/umflint.edu/brayclou/Health-AI-CLPsych/results/llama-2step-10epochs.csv"
 
 ######
 

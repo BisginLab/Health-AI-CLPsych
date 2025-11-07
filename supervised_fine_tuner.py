@@ -1,6 +1,6 @@
 #Imports
-import peft
-from peft import prepare_model_for_kbit_training
+import peft 
+from peft import prepare_model_for_kbit_training, PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments, set_seed, BitsAndBytesConfig
 import datasets as ds
 from huggingface_hub import login
@@ -8,18 +8,7 @@ import os
 from collections import defaultdict
 from dotenv import load_dotenv
 import argparse
-
-"""
-- This is the current iteration of the fine-tuning script I created for supervised llm generation.  It trains on
-the expert labeled data, in order to hopefully get the most skilled classification competence possible.
-
-- Why does this new script replace the older supervised summarizer?
-The old script had a couple main issues that made it unworkable.  First, it trained the model at a post level, dispite having only 
-user level labels available.  This caused the output to become garbled.  Second, the loss was bouncing all over the place in the old
-script and I couldn't figure out why(though it was probably because of the first issue.)  Finally, the code was just bad in general, and I had learned
-more since that attempt.  While I could have modified the old script instead of starting from scratch, the effort involved would likely have been greater
-what with the old code causing errors in the new code.
-"""
+from tqdm import tqdm
 
 # parser = argparse.ArgumentParser(description="Process model and output csv.")
 # parser.add_argument("--model", type=str, help="Model name")
@@ -29,7 +18,7 @@ what with the old code causing errors in the new code.
 
 #Log in to huggingface with api token
 load_dotenv()
-token = "<token here>" #os.getenv("HF_TOKEN")
+token = os.getenv("HF_TOKEN")
 assert token, "HF_TOKEN not set correctly!"
 login(token)
 set_seed(35)
@@ -41,14 +30,16 @@ bitsandbytes_config = BitsAndBytesConfig(
 )
 
 #Defined changable variables
-model_name = "HuggingFaceTB/SmolLM3-3B"
+model_name = "meta-llama/Llama-3.2-3B-Instruct"
+adapter_dir = "/home/umflint.edu/brayclou/Health-AI-CLPsych/finetuned/llama-2step-10epochs/unsupervised-finetuned"
 crowd_test_feature_df_name = "/shared/DATA/reddit/crowd/test/shared_task_posts_test.csv"
 crowd_test_label_df_name = "/shared/DATA/reddit/crowd/test/crowd_test.csv"
 crowd_train_feature_df_name = "/shared/DATA/reddit/crowd/train/shared_task_posts.csv"
 crowd_train_label_df_name = "/shared/DATA/reddit/crowd/train/crowd_train.csv"
 max_posts_per_user = 10
 max_token_lenth_cap = 2048
-output_dir = f"/home/umflint.edu/brayclou/Health-AI-CLPsych/finetuned/SmolLM3-10epochs"
+epochs = 18
+output_dir = f"/home/umflint.edu/brayclou/Health-AI-CLPsych/finetuned/llama-2step-2&18epochs/supervised-finetuned"
 
 #Load model
 print("Setting tokenizer...")
@@ -56,9 +47,49 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "right"
 print("Loading model in kbit...")
-untuned_model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", quantization_config=bitsandbytes_config)
-untuned_model = prepare_model_for_kbit_training(untuned_model)
-untuned_model.config.pad_token_id = tokenizer.pad_token_id
+
+def load_model(model_name: str, adapter_dir: str, tokenizer_for_eos):
+    """
+    This function handles the instantiation and loading of the huggingface model.  It is used instead of a simple AutoModelForCausalLM call
+    so that if a fine-tuned model adapter is present and passed in as an argument, it is merged into the model for use in inference.
+
+    args:
+        model_name (str): the huggingface repo name for the model
+        adapter_dir (str): the directory path to the saved model weights.  ENSURE that these model weights are only applied to their
+                           appropriate model.
+        tokenizer_for_eos: Passes in the tokenizer so AutoModelForCausalLM can set eos_token_id on the model.
+    returns: 
+        output_model: The final model, fine-tuned or base depending on whether adapter_dir is passed in as an empty string.
+    """
+    if adapter_dir == "":
+        #Load the base model.
+        output_model = AutoModelForCausalLM.from_pretrained(
+            model_name, 
+            device_map="auto", 
+            quantization_config=bitsandbytes_config
+        )
+        output_model = prepare_model_for_kbit_training(output_model)
+        output_model.config.pad_token_id = tokenizer.pad_token_id
+        return output_model
+    else:
+        #Load base model
+        base_model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            device_map="auto",
+            quantization_config=bitsandbytes_config
+        )
+
+        #Combine base model with adapter
+        output_model = PeftModel.from_pretrained(base_model, adapter_dir)
+
+        #Prepare for training
+        output_model = prepare_model_for_kbit_training(output_model)
+        output_model.gradient_checkpointing_enable()
+        output_model.config.pad_token_id = tokenizer.pad_token_id
+        output_model.enable_input_require_grads()
+        return output_model
+
+untuned_model = load_model(model_name, adapter_dir, tokenizer)
 
 #If model's max length is an effective infinite, cap at a given number
 model_max_len = tokenizer.model_max_length
@@ -81,7 +112,7 @@ df_y = ds.concatenate_datasets([df_y_1, df_y_2])
 #Preprocess dataset
 print("Sorting dataset into defaultdict...")
 user_posts = defaultdict(list)
-for row in df_X:
+for row in tqdm(df_X):
     if len(user_posts[row["user_id"]]) <max_posts_per_user:
         if not row["post_body"]:
             row["post_body"] = ""
@@ -150,7 +181,12 @@ lora_config = peft.LoraConfig(
 #MAYBE do bitsandbytes quantization(broke something last time)
 
 #Set up peft
-peft_model = peft.get_peft_model(untuned_model, lora_config)
+do_fp16 = False
+if adapter_dir == "":
+    peft_model = peft.get_peft_model(untuned_model, lora_config)
+    do_fp16 = True
+else: 
+    peft_model = untuned_model
 
 #Set up trainer
 trainer_config = TrainingArguments(
@@ -162,8 +198,8 @@ trainer_config = TrainingArguments(
     learning_rate=2e-4,
     max_grad_norm=1.0,
     weight_decay=0.0,
-    fp16=True,
-    num_train_epochs=10, #args.epochs,
+    fp16=do_fp16,
+    num_train_epochs=epochs, #args.epochs,
     save_safetensors=True,
     optim="paged_adamw_8bit",
     remove_unused_columns=False,
